@@ -6,7 +6,7 @@ CFLAGS = -Wall -O2
 
 #CXX = clang++
 CXX = g++
-CXXFLAGS = -Wall -O2
+CXXFLAGS = -Wall -O2 -std=c++11
 
 ODIR = obj
 SDIR = src
@@ -26,7 +26,7 @@ $(ODIR)/%.o: $(SDIR)/%.cpp
 	$(CXX) -c $(INC) $(CXXFLAGS) $< -o $@
 
 $(OUT): $(OBJS)
-	$(CXX) $(LIBS) $^ -o $(OUT)
+	$(CXX) $(LIBS) $^ -o $(OUT) -lcurl
 
 .PHONY: clean
 

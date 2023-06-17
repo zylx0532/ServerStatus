@@ -36,15 +36,20 @@ class CMain
 		char m_aHost[128];
 		char m_aLocation[128];
 		char m_aPassword[128];
+        int m_aMonthStart;          //track month network traffic. by: https://cpp.la
 
-		int64 m_TimeConnected;
-		int64 m_LastUpdate;
+        int64_t m_LastNetworkIN;    //restore month traffic info.
+        int64_t m_LastNetworkOUT;   //restore month traffic info.
+		int64_t m_TimeConnected;
+		int64_t m_LastUpdate;
+        int64_t m_AlarmLastTime;    //record last alarm time.
 
 		struct CStats
 		{
 			bool m_Online4;
 			bool m_Online6;
-			bool m_IpStatus;    //mh361 or mh370, mourn mh370, 2014-03-08 01:20　lost from all over the world. by:cpp.la
+			// bool m_IpStatus， delete ip_status check, Duplicate packet loss rate detection
+			// mh361 or mh370, mourn mh370, 2014-03-08 01:20　lost from all over the world. by:https://cpp.la
 			int64_t m_Uptime;
 			double m_Load_1;
 			double m_Load_5;
@@ -69,12 +74,21 @@ class CMain
 			int64_t m_udpCount;
 			int64_t m_processCount;
 			int64_t m_threadCount;
+			int64_t m_IORead;
+			int64_t m_IOWrite;
 			double m_CPU;
 			char m_aCustom[512];
 			// Options
 			bool m_Pong;
 		} m_Stats;
 	} m_aClients[NET_MAX_CLIENTS];
+
+	struct CWatchDog{
+	    char m_aName[128];
+	    char m_aRule[128];
+        int  m_aInterval;
+	    char m_aCallback[1024];
+	} m_aCWatchDogs[NET_MAX_CLIENTS];
 
 	struct CJSONUpdateThreadData
 	{
@@ -92,6 +106,14 @@ public:
 	int HandleMessage(int ClientNetID, char *pMessage);
 	int ReadConfig();
 	int Run();
+
+    CWatchDog *Watchdog(int ruleID) { return &m_aCWatchDogs[ruleID]; }
+    void WatchdogMessage(int ClientNetID,
+                         double load_1, double load_5, double load_15, double ping_10010, double ping_189, double ping_10086,
+                         double time_10010, double time_189, double time_10086, double tcp_count, double udp_count, double process_count, double thread_count,
+                         double network_rx, double network_tx, double network_in, double network_out,double memory_total,
+                         double memory_used,double swap_total, double swap_used, double hdd_total,
+                         double hdd_used, double io_read, double io_write, double cpu,double online4, double online6);
 
 	CClient *Client(int ClientID) { return &m_aClients[ClientID]; }
 	CClient *ClientNet(int ClientNetID);

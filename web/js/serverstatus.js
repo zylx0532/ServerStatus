@@ -1,4 +1,4 @@
-// serverstatus.js
+// serverstatus.js. big data boom today.
 var error = 0;
 var d = 0;
 var server_status = new Array();
@@ -8,24 +8,9 @@ function timeSince(date) {
 		return "从未.";
 
 	var seconds = Math.floor((new Date() - date) / 1000);
-	var interval = Math.floor(seconds / 31536000);
-
-	if (interval > 1)
-		return interval + " 年前.";
-	interval = Math.floor(seconds / 2592000);
-	if (interval > 1)
-		return interval + " 月前.";
-	interval = Math.floor(seconds / 86400);
-	if (interval > 1)
-		return interval + " 日前.";
-	interval = Math.floor(seconds / 3600);
-	if (interval > 1)
-		return interval + " 小时前.";
-	interval = Math.floor(seconds / 60);
+	var interval = Math.floor(seconds / 60);
 	if (interval > 1)
 		return interval + " 分钟前.";
-	/*if(Math.floor(seconds) >= 5)
-		return Math.floor(seconds) + " seconds";*/
 	else
 		return "几秒前.";
 }
@@ -35,24 +20,16 @@ function bytesToSize(bytes, precision, si)
 	var ret;
 	si = typeof si !== 'undefined' ? si : 0;
 	if(si != 0) {
-		var kilobyte = 1000;
-		var megabyte = kilobyte * 1000;
+		var megabyte = 1000 * 1000;
 		var gigabyte = megabyte * 1000;
 		var terabyte = gigabyte * 1000;
 	} else {
-		var kilobyte = 1024;
-		var megabyte = kilobyte * 1024;
+		var megabyte = 1024 * 1024;
 		var gigabyte = megabyte * 1024;
 		var terabyte = gigabyte * 1024;
 	}
 
-	if ((bytes >= 0) && (bytes < kilobyte)) {
-		return bytes + ' B';
-
-	} else if ((bytes >= kilobyte) && (bytes < megabyte)) {
-		ret = (bytes / kilobyte).toFixed(precision) + ' K';
-
-	} else if ((bytes >= megabyte) && (bytes < gigabyte)) {
+	if ((bytes >= megabyte) && (bytes < gigabyte)) {
 		ret = (bytes / megabyte).toFixed(precision) + ' M';
 
 	} else if ((bytes >= gigabyte) && (bytes < terabyte)) {
@@ -64,18 +41,19 @@ function bytesToSize(bytes, precision, si)
 	} else {
 		return bytes + ' B';
 	}
-	if(si != 0) {
+	return ret;
+	/*if(si != 0) {
 		return ret + 'B';
 	} else {
 		return ret + 'iB';
-	}
+	}*/
 }
 
 function uptime() {
 	$.getJSON("json/stats.json", function(result) {
 		$("#loading-notice").remove();
 		if(result.reload)
-			setTimeout(function() { location.reload(true) }, 1000);
+			setTimeout(function() { location.reload() }, 1000);
 
 		for (var i = 0, rlen=result.servers.length; i < rlen; i++) {
 			var TableRow = $("#servers tr#r" + i);
@@ -85,8 +63,8 @@ function uptime() {
 			if (!TableRow.length) {
 				$("#servers").append(
 					"<tr id=\"r" + i + "\" data-toggle=\"collapse\" data-target=\"#rt" + i + "\" class=\"accordion-toggle " + hack + "\">" +
-						"<td id=\"online4\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
-						"<td id=\"ip_status\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
+						"<td id=\"online_status\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
+						"<td id=\"month_traffic\"><div class=\"progress\"><div style=\"width: 100%;\" class=\"progress-bar progress-bar-warning\"><small>加载中</small></div></div></td>" +
 						"<td id=\"name\">加载中</td>" +
 						"<td id=\"type\">加载中</td>" +
 						"<td id=\"location\">加载中</td>" +
@@ -101,9 +79,10 @@ function uptime() {
 					"</tr>" +
 					"<tr class=\"expandRow " + hack + "\"><td colspan=\"16\"><div class=\"accordian-body collapse\" id=\"rt" + i + "\">" +
 						"<div id=\"expand_mem\">加载中</div>" +
-						"<div id=\"expand_swap\">加载中</div>" +
 						"<div id=\"expand_hdd\">加载中</div>" +
 						"<div id=\"expand_tupd\">加载中</div>" +
+						"<div id=\"expand_ping\">加载中</div>" +
+						"<div id=\"expand_lost\">加载中</div>" +
 						"<div id=\"expand_custom\">加载中</div>" +
 					"</div></td></tr>"
 				);
@@ -117,31 +96,19 @@ function uptime() {
 				server_status[i] = true;
 			}
 
-			// Online4
-			if (result.servers[i].online4) {
-				TableRow.children["online4"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["online4"].children[0].children[0].innerHTML = "<small>开启</small>";
+			// online_status
+			if (result.servers[i].online4 && !result.servers[i].online6) {
+				TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-success";
+				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>IPv4</small>";
+			} else if (result.servers[i].online4 && result.servers[i].online6) {
+				TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-success";
+				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>双栈</small>";
+			} else if (!result.servers[i].online4 && result.servers[i].online6) {
+			    TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-success";
+				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>IPv6</small>";
 			} else {
-				TableRow.children["online4"].children[0].children[0].className = "progress-bar progress-bar-danger";
-				TableRow.children["online4"].children[0].children[0].innerHTML = "<small>关闭</small>";
-			}
-
-			// Online6
-			//if (result.servers[i].online6) {
-			//	TableRow.children["online6"].children[0].children[0].className = "progress-bar progress-bar-success";
-			//	TableRow.children["online6"].children[0].children[0].innerHTML = "<small>开启</small>";
-			//} else {
-			//	TableRow.children["online6"].children[0].children[0].className = "progress-bar progress-bar-danger";
-			//	TableRow.children["online6"].children[0].children[0].innerHTML = "<small>关闭</small>";
-			//}
-
-			// Ipstatus
-			if (result.servers[i].ip_status) {
-				TableRow.children["ip_status"].children[0].children[0].className = "progress-bar progress-bar-success";
-				TableRow.children["ip_status"].children[0].children[0].innerHTML = "<small>MH361</small>";
-			} else {
-				TableRow.children["ip_status"].children[0].children[0].className = "progress-bar progress-bar-danger";
-				TableRow.children["ip_status"].children[0].children[0].innerHTML = "<small>MH370</small>";
+				TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-danger";
+				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>关闭</small>";
 			}
 
 			// Name
@@ -158,6 +125,8 @@ function uptime() {
 					TableRow.children["load"].innerHTML = "–";
 					TableRow.children["network"].innerHTML = "–";
 					TableRow.children["traffic"].innerHTML = "–";
+					TableRow.children["month_traffic"].children[0].children[0].className = "progress-bar progress-bar-warning";
+					TableRow.children["month_traffic"].children[0].children[0].innerHTML = "<small>关闭</small>";
 					TableRow.children["cpu"].children[0].children[0].className = "progress-bar progress-bar-danger";
 					TableRow.children["cpu"].children[0].children[0].style.width = "100%";
 					TableRow.children["cpu"].children[0].children[0].innerHTML = "<small>关闭</small>";
@@ -182,6 +151,22 @@ function uptime() {
 					server_status[i] = true;
 				}
 
+				// month traffic
+				var monthtraffic = "";
+				var trafficdiff_in = result.servers[i].network_in - result.servers[i].last_network_in;
+				var trafficdiff_out = result.servers[i].network_out - result.servers[i].last_network_out;
+				if(trafficdiff_in < 1024*1024*1024*1024)
+					monthtraffic += (trafficdiff_in/1024/1024/1024).toFixed(1) + "G";
+				else
+					monthtraffic += (trafficdiff_in/1024/1024/1024/1024).toFixed(1) + "T";
+				monthtraffic += " | "
+				if(trafficdiff_out < 1024*1024*1024*1024)
+					monthtraffic += (trafficdiff_out/1024/1024/1024).toFixed(1) + "G";
+				else
+					monthtraffic += (trafficdiff_out/1024/1024/1024/1024).toFixed(1) + "T";
+				TableRow.children["month_traffic"].children[0].children[0].className = "progress-bar progress-bar-success";
+				TableRow.children["month_traffic"].children[0].children[0].innerHTML = "<small>"+monthtraffic+"</small>";
+
 				// Uptime
 				TableRow.children["uptime"].innerHTML = result.servers[i].uptime;
 
@@ -194,44 +179,28 @@ function uptime() {
 
 				// Network
 				var netstr = "";
-				if(result.servers[i].network_rx < 1000)
-					netstr += result.servers[i].network_rx.toFixed(0) + "B";
-				else if(result.servers[i].network_rx < 1000*1000)
-					netstr += (result.servers[i].network_rx/1000).toFixed(0) + "K";
+				if(result.servers[i].network_rx < 1024*1024)
+					netstr += (result.servers[i].network_rx/1024).toFixed(1) + "K";
 				else
-					netstr += (result.servers[i].network_rx/1000/1000).toFixed(1) + "M";
+					netstr += (result.servers[i].network_rx/1024/1024).toFixed(1) + "M";
 				netstr += " | "
-				if(result.servers[i].network_tx < 1000)
-					netstr += result.servers[i].network_tx.toFixed(0) + "B";
-				else if(result.servers[i].network_tx < 1000*1000)
-					netstr += (result.servers[i].network_tx/1000).toFixed(0) + "K";
+				if(result.servers[i].network_tx < 1024*1024)
+					netstr += (result.servers[i].network_tx/1024).toFixed(1) + "K";
 				else
-					netstr += (result.servers[i].network_tx/1000/1000).toFixed(1) + "M";
+					netstr += (result.servers[i].network_tx/1024/1024).toFixed(1) + "M";
 				TableRow.children["network"].innerHTML = netstr;
 
 				//Traffic
 				var trafficstr = "";
-				if(result.servers[i].network_in < 1024)
-					trafficstr += result.servers[i].network_in.toFixed(0) + "B";
-				else if(result.servers[i].network_in < 1024*1024)
-					trafficstr += (result.servers[i].network_in/1024).toFixed(0) + "K";
-				else if(result.servers[i].network_in < 1024*1024*1024)
-					trafficstr += (result.servers[i].network_in/1024/1024).toFixed(1) + "M";
-				else if(result.servers[i].network_in < 1024*1024*1024*1024)
-					trafficstr += (result.servers[i].network_in/1024/1024/1024).toFixed(2) + "G";
+				if(result.servers[i].network_in < 1024*1024*1024*1024)
+					trafficstr += (result.servers[i].network_in/1024/1024/1024).toFixed(1) + "G";
                 else
-                    trafficstr += (result.servers[i].network_in/1024/1024/1024/1024).toFixed(2) + "T";
+                    trafficstr += (result.servers[i].network_in/1024/1024/1024/1024).toFixed(1) + "T";
 				trafficstr += " | "
-				if(result.servers[i].network_out < 1024)
-					trafficstr += result.servers[i].network_out.toFixed(0) + "B";
-				else if(result.servers[i].network_out < 1024*1024)
-					trafficstr += (result.servers[i].network_out/1024).toFixed(0) + "K";
-				else if(result.servers[i].network_out < 1024*1024*1024)
-					trafficstr += (result.servers[i].network_out/1024/1024).toFixed(1) + "M";
-				else if(result.servers[i].network_out < 1024*1024*1024*1024)
-				    trafficstr += (result.servers[i].network_out/1024/1024/1024).toFixed(2) + "G";
+				if(result.servers[i].network_out < 1024*1024*1024*1024)
+				    trafficstr += (result.servers[i].network_out/1024/1024/1024).toFixed(1) + "G";
 				else
-					trafficstr += (result.servers[i].network_out/1024/1024/1024/1024).toFixed(2) + "T";
+					trafficstr += (result.servers[i].network_out/1024/1024/1024/1024).toFixed(1) + "T";
 				TableRow.children["traffic"].innerHTML = trafficstr;
 
 				// CPU
@@ -254,9 +223,8 @@ function uptime() {
 					TableRow.children["memory"].children[0].children[0].className = "progress-bar progress-bar-success";
 				TableRow.children["memory"].children[0].children[0].style.width = Mem + "%";
 				TableRow.children["memory"].children[0].children[0].innerHTML = Mem + "%";
-				ExpandRow[0].children["expand_mem"].innerHTML = "内存: " + bytesToSize(result.servers[i].memory_used*1024, 2) + " / " + bytesToSize(result.servers[i].memory_total*1024, 2);
-				// Swap
-				ExpandRow[0].children["expand_swap"].innerHTML = "交换分区: " + bytesToSize(result.servers[i].swap_used*1024, 2) + " / " + bytesToSize(result.servers[i].swap_total*1024, 2);
+				// 内存|swap
+				ExpandRow[0].children["expand_mem"].innerHTML = "内存|虚存: " + bytesToSize(result.servers[i].memory_used*1024, 1) + " / " + bytesToSize(result.servers[i].memory_total*1024, 1) + " | " + bytesToSize(result.servers[i].swap_used*1024, 0) + " / " + bytesToSize(result.servers[i].swap_total*1024, 0);
 
 				// HDD
 				var HDD = ((result.servers[i].hdd_used/result.servers[i].hdd_total)*100.0).toFixed(0);
@@ -268,27 +236,40 @@ function uptime() {
 					TableRow.children["hdd"].children[0].children[0].className = "progress-bar progress-bar-success";
 				TableRow.children["hdd"].children[0].children[0].style.width = HDD + "%";
 				TableRow.children["hdd"].children[0].children[0].innerHTML = HDD + "%";
-				ExpandRow[0].children["expand_hdd"].innerHTML = "硬盘: " + bytesToSize(result.servers[i].hdd_used*1024*1024, 2) + " / " + bytesToSize(result.servers[i].hdd_total*1024*1024, 2);
+				// IO Speed for HDD.
+				// IO， 过小的B字节单位没有意义
+				var io = "";
+				if(result.servers[i].io_read < 1024*1024)
+					io += parseInt(result.servers[i].io_read/1024) + "K";
+				else
+					io += parseInt(result.servers[i].io_read/1024/1024) + "M";
+				io += " / "
+				if(result.servers[i].io_write < 1024*1024)
+					io += parseInt(result.servers[i].io_write/1024) + "K";
+				else
+					io += parseInt(result.servers[i].io_write/1024/1024) + "M";
+				// Expand for HDD.
+				ExpandRow[0].children["expand_hdd"].innerHTML = "硬盘|读写: " + bytesToSize(result.servers[i].hdd_used*1024*1024, 2) + " / " + bytesToSize(result.servers[i].hdd_total*1024*1024, 2) + " | " + io;
 
                 // delay time
 
 				// tcp, udp, process, thread count
 				ExpandRow[0].children["expand_tupd"].innerHTML = "TCP/UDP/进/线: " + result.servers[i].tcp_count + " / " + result.servers[i].udp_count + " / " + result.servers[i].process_count+ " / " + result.servers[i].thread_count;
-
+				ExpandRow[0].children["expand_ping"].innerHTML = "联通/电信/移动: " + result.servers[i].time_10010 + "ms / " + result.servers[i].time_189 + "ms / " + result.servers[i].time_10086 + "ms"
 
                 // ping
                 var PING_10010 = result.servers[i].ping_10010.toFixed(0);
                 var PING_189 = result.servers[i].ping_189.toFixed(0);
                 var PING_10086 = result.servers[i].ping_10086.toFixed(0);
-                var pingTime = result.servers[i].time_10010 + "ms💻" + result.servers[i].time_189 + "ms💻" + result.servers[i].time_10086 + "ms"
-                if (PING_10010 >= 10 || PING_189 >= 10 || PING_10086 >= 10)
+				ExpandRow[0].children["expand_lost"].innerHTML = "丢包：联通/电信/移动: " + PING_10010 + "% / " + PING_189 + "% / " + PING_10086 + "%"
+
+                if (PING_10010 >= 20 || PING_189 >= 20 || PING_10086 >= 20)
                     TableRow.children["ping"].children[0].children[0].className = "progress-bar progress-bar-danger";
+                else if (PING_10010 >= 10 || PING_189 >= 10 || PING_10086 >= 10)
+                	TableRow.children["ping"].children[0].children[0].className = "progress-bar progress-bar-warning";
                 else
                     TableRow.children["ping"].children[0].children[0].className = "progress-bar progress-bar-success";
-                    TableRow.children["ping"].children[0].children[0].setAttribute("data-toggle", "tooltip");
-                    TableRow.children["ping"].children[0].children[0].setAttribute("data-placement", "right");
-                    TableRow.children["ping"].children[0].children[0].setAttribute("title", pingTime);
-				TableRow.children["ping"].children[0].children[0].innerHTML = PING_10010 + "%💻" + PING_189 + "%💻" + PING_10086 + "%";
+	            TableRow.children["ping"].children[0].children[0].innerHTML = PING_10010 + "%💻" + PING_189 + "%💻" + PING_10086 + "%";
 
 				// Custom
 				if (result.servers[i].custom) {
@@ -306,12 +287,10 @@ function uptime() {
 			$("#servers > tr.accordion-toggle").each(function(i) {
 				var TableRow = $("#servers tr#r" + i)[0];
 				var ExpandRow = $("#servers #rt" + i);
-				TableRow.children["online4"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["online4"].children[0].children[0].innerHTML = "<small>错误</small>";
-				//TableRow.children["online6"].children[0].children[0].className = "progress-bar progress-bar-error";
-				//TableRow.children["online6"].children[0].children[0].innerHTML = "<small>错误</small>";
-				TableRow.children["ip_status"].children[0].children[0].className = "progress-bar progress-bar-error";
-				TableRow.children["ip_status"].children[0].children[0].innerHTML = "<small>错误</small>";
+				TableRow.children["online_status"].children[0].children[0].className = "progress-bar progress-bar-error";
+				TableRow.children["online_status"].children[0].children[0].innerHTML = "<small>错误</small>";
+				TableRow.children["month_traffic"].children[0].children[0].className = "progress-bar progress-bar-error";
+				TableRow.children["month_traffic"].children[0].children[0].innerHTML = "<small>错误</small>";
 				TableRow.children["uptime"].children[0].children[0].className = "progress-bar progress-bar-error";
 				TableRow.children["uptime"].children[0].children[0].innerHTML = "<small>错误</small>";
 				TableRow.children["load"].children[0].children[0].className = "progress-bar progress-bar-error";
@@ -356,14 +335,17 @@ setInterval(updateTime, 2000);
 
 
 // styleswitcher.js
-function setActiveStyleSheet(title) {
-	var i, a, main;
-	for(i=0; (a = document.getElementsByTagName("link")[i]); i++) {
-		if(a.getAttribute("rel").indexOf("style") != -1 && a.getAttribute("title")) {
-			a.disabled = true;
-			if(a.getAttribute("title") == title) a.disabled = false;
-		}
-	}
+function setActiveStyleSheet(title, cookie=false) {
+        var i, a, main;
+        for(i=0; (a = document.getElementsByTagName("link")[i]); i++) {
+                if(a.getAttribute("rel").indexOf("style") != -1 && a.getAttribute("title")) {
+                        a.disabled = true;
+                        if(a.getAttribute("title") == title) a.disabled = false;
+                }
+        }
+        if (true==cookie) {
+                createCookie("style", title, 365);
+        }
 }
 
 function getActiveStyleSheet() {
@@ -373,15 +355,6 @@ function getActiveStyleSheet() {
 			return a.getAttribute("title");
 	}
 	return null;
-}
-
-function getPreferredStyleSheet() {
-	var i, a;
-	for(i=0; (a = document.getElementsByTagName("link")[i]); i++) {
-		if(a.getAttribute("rel").indexOf("style") != -1	&& a.getAttribute("rel").indexOf("alt") == -1 && a.getAttribute("title"))
-			return a.getAttribute("title");
-	}
-return null;
 }
 
 function createCookie(name,value,days) {
@@ -408,16 +381,19 @@ function readCookie(name) {
 }
 
 window.onload = function(e) {
-	var cookie = readCookie("style");
-	var title = cookie ? cookie : getPreferredStyleSheet();
-	setActiveStyleSheet(title);
+        var cookie = readCookie("style");
+        if (cookie && cookie != 'null' ) {
+                setActiveStyleSheet(cookie);
+        } else {
+                function handleChange (mediaQueryListEvent) {
+                        if (mediaQueryListEvent.matches) {
+                                setActiveStyleSheet('dark');
+                        } else {
+                                setActiveStyleSheet('light');
+                        }
+                }
+                const mediaQueryListDark = window.matchMedia('(prefers-color-scheme: dark)');
+                setActiveStyleSheet(mediaQueryListDark.matches ? 'dark' : 'light');
+                mediaQueryListDark.addEventListener("change",handleChange);
+        }
 }
-
-window.onunload = function(e) {
-	var title = getActiveStyleSheet();
-	createCookie("style", title, 365);
-}
-
-var cookie = readCookie("style");
-var title = cookie ? cookie : getPreferredStyleSheet();
-setActiveStyleSheet(title);
