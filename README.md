@@ -6,11 +6,12 @@
 [![Python Support](https://img.shields.io/badge/python-3.6%2B%20-blue.svg)](https://github.com/cppla/ServerStatus)
 [![C++ Compiler](http://img.shields.io/badge/C++-GNU-blue.svg?style=flat&logo=cplusplus)](https://github.com/cppla/ServerStatus)
 [![License](https://img.shields.io/badge/license-MIT-4EB1BA.svg?style=flat-square)](https://github.com/cppla/ServerStatus)
-[![Version](https://img.shields.io/badge/Version-Build%201.0.9-red)](https://github.com/cppla/ServerStatus)
+[![Version](https://img.shields.io/badge/Version-Build%201.1.4-red)](https://github.com/cppla/ServerStatus)
 
-![Latest Version](http://dl.cpp.la/Archive/serverstatus_1.0.9.png)
+![Latest Host Version](https://dl.cpp.la/Archive/serverstatus_1.1.2_host.png)
+![Latest Server Version](https://dl.cpp.la/Archive/serverstatus_1.1.2_server.png)
 
-`Watchdog🐶已经加入，触发式告警。 interval只是为了防止频繁收到报警信息造成骚扰，并不是探测间隔。`    
+`Watchdog触发式告警，interval只是为了防止频繁收到报警信息造成的骚扰，并不是探测间隔。值得注意的是，Exprtk库默认使用窄字符类型，中文等Unicode字符无法解析计算，等待修复。 `    
 
 # 目录：
 
@@ -44,8 +45,12 @@ wget --no-check-certificate -qO client-linux.py 'https://raw.githubusercontent.c
 
 # 主题：            
 
-* layui：https://github.com/zeyudada/StatusServerLayui        
-<img src=https://dl.cpp.la/Archive/serverstatus_layui.png width=200 height=100 /> 
+* layui：https://github.com/zeyudada/StatusServerLayui ，预览：https://sslt.8zyw.cn            
+<img src=https://dl.cpp.la/Archive/serverstatus_layui.png width=200 height=100 />
+
+* light：https://github.com/orilights/ServerStatus-Theme-Light ，预览：https://tz.cloudcpp.com/index3.html    
+<img src=https://dl.cpp.la/Archive/serverstatus_light.png width=200 height=100 />  
+
 
 # 手动安装教程：     
    
@@ -63,13 +68,14 @@ cd ServerStatus/server && make
 
 #### 二、修改配置文件         
 ```diff
-! watchdog rule 可以为任何已知字段的表达式。         
-! watchdog interval 最小通知间隔。
-! watchdog callback 可自定义为Post方法的URL，告警内容将拼接其后并发起回调。   
+! watchdog rule 可以为任何已知字段的表达式。注意Exprtk库默认使用窄字符类型，中文等Unicode字符无法解析计算，等待修复       
+! watchdog interval 最小通知间隔
+! watchdog callback 可自定义为Post方法的URL，告警内容将拼接其后并发起回调 
 
-! watchdog callback Telegram：https://api.telegram.org/bot你自己的密钥/sendMessage?parse_mode=HTML&disable_web_page_preview=true&chat_id=你自己的标识&text=
+! watchdog callback Telegram: https://api.telegram.org/bot你自己的密钥/sendMessage?parse_mode=HTML&disable_web_page_preview=true&chat_id=你自己的标识&text=
 ! watchdog callback Server酱: https://sctapi.ftqq.com/你自己的密钥.send?title=ServerStatus&desp=
-! watchdog callback PushDeer: https://api2.pushdeer.com/message/push?pushkey=你自己的密钥&text=  
+! watchdog callback PushDeer: https://api2.pushdeer.com/message/push?pushkey=你自己的密钥&text=
+! watchdog callback BasicAuth: https://用户名:密码@你自己的域名/api/push?message=
 ```
 
 ```
@@ -84,13 +90,21 @@ cd ServerStatus/server && make
 			"location": "🇨🇳",
 			"password": "USER_DEFAULT_PASSWORD",
 			"monthstart": 1
-		},
+		}
+	],
+	"monitors": [
+		{
+			"name": "监测网站以及MySQL、Redis，默认为七天在线率",
+			"host": "https://www.baidu.com",
+			"interval": 60,
+			"type": "https"
+		}
 	],
 	"watchdog":
 	[
 	        {
-			"name": "服务器负载高监控",
-			"rule": "cpu>90&load_5>3",
+			"name": "服务器负载高监控，排除内存大于32G物理机，同时排除node1机器",
+			"rule": "cpu>90&load_1>4&memory_total<33554432&name!='node1'",
 			"interval": 600,
 			"callback": "https://yourSMSurl"
 		},
@@ -108,7 +122,7 @@ cd ServerStatus/server && make
                 },
 		{
                         "name": "DDOS和CC攻击监控",
-                        "rule": "tcp_count>500",
+                        "rule": "tcp_count>600",
                         "interval": 300,
                         "callback": "https://yourSMSurl"
                 },
@@ -161,7 +175,7 @@ web-dir参数为上一步设置的网站根目录，务必修改成自己网站�
 服务器和客户端自行加入开机启动，或进程守护，或后台方式运行。 例如： nohup python3 client-linux.py &    
 
 `extra scene (run web/ssview.py)`
-![Shell View](http://dl.cpp.la/Archive/serverstatus-shell.png)
+![Shell View](https://dl.cpp.la/Archive/serverstatus-shell.png?version=2023)
 
 
 # Make Better        
