@@ -6,10 +6,9 @@
 [![Python Support](https://img.shields.io/badge/python-3.6%2B%20-blue.svg)](https://github.com/cppla/ServerStatus)
 [![C++ Compiler](http://img.shields.io/badge/C++-GNU-blue.svg?style=flat&logo=cplusplus)](https://github.com/cppla/ServerStatus)
 [![License](https://img.shields.io/badge/license-MIT-4EB1BA.svg?style=flat-square)](https://github.com/cppla/ServerStatus)
-[![Version](https://img.shields.io/badge/Version-Build%201.1.4-red)](https://github.com/cppla/ServerStatus)
+[![Version](https://img.shields.io/badge/Version-Build%201.1.5-red)](https://github.com/cppla/ServerStatus)
 
-![Latest Host Version](https://dl.cpp.la/Archive/serverstatus_1.1.2_host.png)
-![Latest Server Version](https://dl.cpp.la/Archive/serverstatus_1.1.2_server.png)
+![Latest Host Version](https://dl.cpp.la/Archive/serverstatus_1.1.5.png)
 
 `Watchdog触发式告警，interval只是为了防止频繁收到报警信息造成的骚扰，并不是探测间隔。值得注意的是，Exprtk库默认使用窄字符类型，中文等Unicode字符无法解析计算，等待修复。 `    
 
@@ -70,12 +69,12 @@ cd ServerStatus/server && make
 ```diff
 ! watchdog rule 可以为任何已知字段的表达式。注意Exprtk库默认使用窄字符类型，中文等Unicode字符无法解析计算，等待修复       
 ! watchdog interval 最小通知间隔
-! watchdog callback 可自定义为Post方法的URL，告警内容将拼接其后并发起回调 
+! watchdog callback 可自定义为Post方法的URL，告警内容将拼接其后并发起回调    
 
-! watchdog callback Telegram: https://api.telegram.org/bot你自己的密钥/sendMessage?parse_mode=HTML&disable_web_page_preview=true&chat_id=你自己的标识&text=
-! watchdog callback Server酱: https://sctapi.ftqq.com/你自己的密钥.send?title=ServerStatus&desp=
-! watchdog callback PushDeer: https://api2.pushdeer.com/message/push?pushkey=你自己的密钥&text=
-! watchdog callback BasicAuth: https://用户名:密码@你自己的域名/api/push?message=
+! Telegram: https://api.telegram.org/bot你自己的密钥/sendMessage?parse_mode=HTML&disable_web_page_preview=true&chat_id=你自己的标识&text=
+! Server酱: https://sctapi.ftqq.com/你自己的密钥.send?title=ServerStatus&desp=
+! PushDeer: https://api2.pushdeer.com/message/push?pushkey=你自己的密钥&text=
+! HttpBasicAuth: https://用户名:密码@你自己的域名/api/push?message=
 ```
 
 ```
@@ -94,10 +93,16 @@ cd ServerStatus/server && make
 	],
 	"monitors": [
 		{
-			"name": "监测网站以及MySQL、Redis，默认为七天在线率",
+			"name": "监测网站，默认为一天在线率",
 			"host": "https://www.baidu.com",
-			"interval": 60,
+			"interval": 1200,
 			"type": "https"
+		},
+		{
+			"name": "监测tcp服务端口",
+			"host": "1.1.1.1:80",
+			"interval": 1200,
+			"type": "tcp"
 		}
 	],
 	"watchdog":
@@ -109,8 +114,8 @@ cd ServerStatus/server && make
 			"callback": "https://yourSMSurl"
 		},
 		{
-                        "name": "服务器内存使用率过高监控",
-                        "rule": "(memory_used/memory_total)*100>90",
+                        "name": "服务器内存使用率过高监控，排除小于1G的机器",
+                        "rule": "(memory_used/memory_total)*100>90&memory_total>1048576",
                         "interval": 600,
                         "callback": "https://yourSMSurl"
                 },
@@ -121,8 +126,8 @@ cd ServerStatus/server && make
                         "callback": "https://yourSMSurl"
                 },
 		{
-                        "name": "DDOS和CC攻击监控",
-                        "rule": "tcp_count>600",
+                        "name": "DDOS和CC攻击监控，限制甲骨文机器",
+                        "rule": "tcp_count>600&type='Oracle'",
                         "interval": 300,
                         "callback": "https://yourSMSurl"
                 },
@@ -130,6 +135,18 @@ cd ServerStatus/server && make
 			"name": "服务器月出口流量999GB告警",
 			"rule": "(network_out-last_network_out)/1024/1024/1024>999",
 			"interval": 3600,
+			"callback": "https://yourSMSurl"
+		},
+		{
+			"name": "阿里云服务器流量18GB告警,限制username为乌兰察布",
+			"rule": "(network_out-last_network_out)/1024/1024/1024>18&(username='wlcb1'|username='wlcb2'|username='wlcb3'|username='wlcb4')",
+			"interval": 3600,
+			"callback": "https://yourSMSurl"
+		},
+		{
+			"name": "重要线路丢包率过高检查",
+			"rule": "(ping_10010>10|ping_189>10|ping_10086>10)&(host='sgp'|host='qqhk'|host='hk-21-x'|host='hk-31-x')",
+			"interval": 600,
 			"callback": "https://yourSMSurl"
 		},
 		{
